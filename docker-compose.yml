@@ -21,6 +21,7 @@ services:
   # Application Service (FastAPI)
   app:
     build: .
+    container_name: duolingo-de-app
     env_file:
       - ./.env
     ports:
@@ -28,6 +29,7 @@ services:
     volumes:
       # Mount the local 'app' directory into the container for hot reloading
       - ./app:/code/app
+      - ./migrations:/code/migrations
     depends_on:
       db:
         condition: service_healthy
