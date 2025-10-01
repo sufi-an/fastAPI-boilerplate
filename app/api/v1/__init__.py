@@ -1,9 +1,9 @@
 from fastapi import APIRouter
-from .endpoints import user  # auth, students, teachers,tasks, user # etc
+from .endpoints import user, auth  # , students, teachers,tasks, user # etc
 
 api_router = APIRouter()
 
-# api_router.include_router(auth.router, prefix="/auth", tags=["Auth"])
+api_router.include_router(auth.router, prefix="/auth", tags=["Auth"])
 
 # api_router.include_router(students.router, prefix="/students", tags=["Students"])
 # api_router.include_router(teachers.router, prefix="/teachers", tags=["Teachers"])
