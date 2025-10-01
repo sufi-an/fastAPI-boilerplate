@@ -1,10 +1,11 @@
+from sqlalchemy import select
 from fastapi import Request, HTTPException, status, Depends
 
 from functools import wraps
 from typing import Callable, List, Type
 from jose import JWTError
 from app.core.security import verify_token
-from app.core.database import SessionLocal
+from app.core.database import AsyncSessionLocal
 from app.models.user import User, UserRole
 
 
@@ -51,9 +52,11 @@ def permissions(required: List[Type[BasePermission]]):
                     headers={"www-Authenticate": "Bearer"},
                 )
 
-            db = SessionLocal()
+            db = AsyncSessionLocal()
             try:
-                user = db.query(User).filter(User.id == user_id).first()
+                stmt = select(User).where(User.id == user_id)
+                result = await db.execute(stmt)
+                user = result.scalar_one_or_none()
                 if not user:
                     raise HTTPException(
                         status_code=status.HTTP_401_UNAUTHORIZED,

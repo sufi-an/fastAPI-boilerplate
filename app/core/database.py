@@ -1,21 +1,40 @@
-from sqlmodel import SQLModel, create_engine
+# app/core/database.py
+from sqlmodel import SQLModel
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
-from sqlalchemy.orm import sessionmaker, Session
 
-# SQLAlchemy-compatible engine
-engine = create_engine(settings.DATABASE_URL, echo=True)
+# Convert sync URL to async URL
+async_database_url = settings.DATABASE_URL.replace(
+    "postgresql://", "postgresql+asyncpg://"
+)
 
-# Session factory
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# Create async engine
+async_engine = create_async_engine(
+    async_database_url,
+    echo=True,
+    future=True
+)
 
-# Create tables
-def create_db_and_tables():
-    SQLModel.metadata.create_all(engine)
+# Async session factory
+AsyncSessionLocal = sessionmaker(
+    bind=async_engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+    autoflush=False,
+    autocommit=False
+)
 
-# Dependency for FastAPI routes
-def get_db():
-    db: Session = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+# Async dependency
+async def get_db():
+    async with AsyncSessionLocal() as session:
+        try:
+            yield session
+        finally:
+            await session.close()
+
+# Async table creation
+async def create_db_and_tables():
+    async with async_engine.begin() as conn:
+        await conn.run_sync(SQLModel.metadata.create_all)
+    print("Database tables created successfully!")

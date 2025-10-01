@@ -1,31 +1,80 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.pagination import PaginationParams
 from app.core.security import hash_password
 from app.models.user import User
 from app.schemas.user import UserCreate
-from typing import List, Optional
+from typing import List, Optional, Tuple
+from sqlalchemy import select, func
+from fastapi import  HTTPException
 
-
-async def create_user(db: Session, user_data: UserCreate) -> User:
+# service.py
+async def create_user(db: AsyncSession, user_data: UserCreate) -> User:
     try:
+        # Check if user already exists (optional)
+        stmt = select(User).where(
+            (User.email == user_data.email) | 
+            (User.mobile_no == user_data.mobile_no)
+        )
+        result = await db.execute(stmt)
+        existing_user = result.scalar_one_or_none()
+        
+        if existing_user:
+            raise HTTPException(
+                status_code=400,
+                detail="User with this email or username already exists"
+            )
+        
+        # Hash password and create user
         hashed_password = hash_password(user_data.password)
-        print(hashed_password)
-        user_data.password = hashed_password
-        new_user = User(**user_data.model_dump())
+        user_dict = user_data.model_dump()
+        user_dict['password'] = hashed_password
+        
+        new_user = User(**user_dict)
         db.add(new_user)
-        db.commit()
-        db.refresh(new_user)
-
+        await db.commit()
+        await db.refresh(new_user)
+        
         return new_user
+        
+    except HTTPException:
+        await db.rollback()
+        raise
     except Exception as e:
-        print(e)
+        await db.rollback()
+        print(f"Error creating user: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Could not create user"
+        )
+
+
+async def get_users(
+    db: AsyncSession, 
+    search: Optional[str] = None,
+    pagination: PaginationParams = None, 
+) -> Tuple[List[User], int]:
+    try:
+        # Build base query
+        query = select(User)
+        
+        if search:
+            query = query.where(User.full_name.ilike(f"%{search}%"))
+
+        # Get total count
+        count_query = select(func.count()).select_from(query.subquery())
+        total_result = await db.execute(count_query)
+        total = total_result.scalar_one()
+        
+        # Apply pagination and get items
+        if pagination:
+            query = query.offset(pagination.offset).limit(pagination.limit)
+        
+        items_result = await db.execute(query)
+        items = items_result.scalars().all()
+        
+        return items, total
+    except Exception as e:
+        print(f"Error in get_users: {e}")
         raise e
 
-
-async def get_users(db: AsyncSession, search: Optional[str] = None) -> List[User]:
-    filters = []
-
-    if search:
-        filters.append(User.name.ilike(f"%{search}%"))
-
-    return db.query(User).all()

@@ -1,4 +1,4 @@
-from typing import Optional, Annotated
+from typing import List, Optional, Annotated
 from pydantic import BaseModel, constr, EmailStr, Field
 
 
@@ -23,8 +23,17 @@ class UserResponse(UserBase):
     username: str
 
     class Config:
-        orm_mode = True
+        #orm_mode = True
+        from_attributes=True
 
+class PaginationInfo(BaseModel):
+    total: int
+    limit: int
+    offset: int
+
+class PaginatedUsers(BaseModel):
+    items: List[UserResponse]
+    pagination: PaginationInfo
 
 class Token(BaseModel):
     assess_token: str
