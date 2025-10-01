@@ -3,7 +3,7 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     # Database
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@db/school_db")
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@db/postgres")
     print(DATABASE_URL)
     # Security
     SECRET_KEY: str = os.getenv("SECRET_KEY", "supersecretkey")

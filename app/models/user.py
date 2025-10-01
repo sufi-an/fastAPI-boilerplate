@@ -5,10 +5,12 @@ from sqlalchemy.orm import validates, relationship
 
 from app.models.base import Base
 
+
 class UserRole(enum.Enum):
     SUPER_ADMIN = "super_admin"
     ADMIN = "admin"
     TEACHER = "teacher"
+
 
 class User(Base):
     __tablename__ = "users"
@@ -22,13 +24,12 @@ class User(Base):
 
     username = Column(String(15), unique=True, nullable=False)
 
-    created_at = Column(String, nullable=False, server_default="CURRENT_TIMESTAMP")  # Default DB value
-
+    created_at = Column(
+        String, nullable=False, server_default="CURRENT_TIMESTAMP"
+    )  # Default DB value
 
     # One-to-one relationship with Teacher
-    teacher = relationship("Teacher", back_populates="user", uselist=False, cascade="all, delete-orphan")
-
-
+    # teacher = relationship("Teacher", back_populates="user", uselist=False, cascade="all, delete-orphan")
 
     @validates("mobile_no")
     def sync_username(self, key, value):
