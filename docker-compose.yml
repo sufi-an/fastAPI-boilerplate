@@ -4,6 +4,7 @@ services:
   # Database Service (PostgreSQL)
   db:
     image: postgres:17
+    container_name: duolingo-de-db
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     environment:

@@ -7,10 +7,11 @@ from typing import List, Optional
 
 # from app.permissions.base import  IsSuperAdmin, permissions
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.schemas.user import PaginatedUsers, UserCreate, UserResponse
+from app.schemas.user import PaginatedUsers, UserCreate, UserResponse, UserUpdate
 from app.services.user_service import (
     create_user,
     get_users,
+    update_user,
     # get_student_by_id,
     # update_student,
     # delete_student,
@@ -54,3 +55,14 @@ async def list(
             "offset": pagination.offset,
         },
     }
+
+# Partial update user by ID
+@router.patch("/{user_id}", response_model=UserResponse)
+@permissions([IsSuperAdmin])
+async def partial_update(
+    user_id: int,
+    request: Request, 
+    user: UserUpdate, 
+    db: AsyncSession = Depends(get_db)  
+):
+    return await update_user(db,user_id, user)

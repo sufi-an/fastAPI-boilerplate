@@ -3,12 +3,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.pagination import PaginationParams
 from app.core.security import hash_password
 from app.models.user import User
-from app.schemas.user import UserCreate
+from app.schemas.user import UserCreate, UserUpdate
 from typing import List, Optional, Tuple
 from sqlalchemy import select, func
 from fastapi import  HTTPException
 
-# service.py
+
 async def create_user(db: AsyncSession, user_data: UserCreate) -> User:
     try:
         # Check if user already exists (optional)
@@ -78,3 +78,30 @@ async def get_users(
         print(f"Error in get_users: {e}")
         raise e
 
+
+
+async def update_user(db: AsyncSession,user_id: int, user_data: UserUpdate) -> User:
+    try:
+        stmt = select(User).where(
+            (User.id == user_id) 
+        )
+        result = await db.execute(stmt)
+        user_instance = result.scalar_one_or_none()
+        if not user_instance:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Update task fields
+        update_user_data = user_data.model_dump(exclude_unset=True)
+        for key, value in update_user_data.items():
+            setattr(user_instance, key, value)
+        
+        db.add(user_instance)
+        db.commit()
+        db.refresh(user_instance)
+        
+        return user_instance
+
+    except Exception as e:
+        await db.rollback()
+        print(e)
+        raise e

@@ -1,4 +1,4 @@
-# In app/middlewares.py
+
 
 import time
 from starlette.middleware.base import BaseHTTPMiddleware
