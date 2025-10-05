@@ -177,7 +177,7 @@ services:
   # Application Service (FastAPI)
   app:
     build: .
-    container_name: duolingo-de-app
+    container_name: fast-app
     env_file:
       - ./.env
     ports:

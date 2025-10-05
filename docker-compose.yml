@@ -4,7 +4,7 @@ services:
   # Database Service (PostgreSQL)
   db:
     image: postgres:17
-    container_name: duolingo-de-db
+    container_name: fastapi-db
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     environment:
@@ -22,7 +22,7 @@ services:
   # Application Service (FastAPI)
   app:
     build: .
-    container_name: duolingo-de-app
+    container_name: fastapi-app
     env_file:
       - ./.env
     ports:
