@@ -1,5 +1,6 @@
 from app.core.pagination import PaginationParams, paginated, pagination_params
 from app.permissions.base import IsSuperAdmin, permissions, IsAdmin
+from app.repositories.user_repository import UserRepository
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
@@ -24,13 +25,17 @@ router = APIRouter()
 
 # Create an user
 @router.post("/", response_model=UserResponse)
-@permissions([IsSuperAdmin])
+#@permissions([IsSuperAdmin])
 async def create(
     request: Request, 
-    user: UserCreate, 
+    user_data: UserCreate, 
     db: AsyncSession = Depends(get_db)  
 ):
-    return await create_user(db, user)
+    user_repo = UserRepository(db) 
+    
+    # Call the service layer with the data and the repository
+    return await create_user(user_data=user_data, user_repo=user_repo)
+    #return await create_user(db, user)
 
 
 # get users List
@@ -65,4 +70,5 @@ async def partial_update(
     user: UserUpdate, 
     db: AsyncSession = Depends(get_db)  
 ):
+    
     return await update_user(db,user_id, user)

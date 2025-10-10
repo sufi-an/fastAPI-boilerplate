@@ -3,52 +3,34 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.pagination import PaginationParams
 from app.core.security import hash_password
 from app.models.user import User
+from app.repositories.user_repository import UserRepository
 from app.schemas.user import UserCreate, UserUpdate
 from typing import List, Optional, Tuple
 from sqlalchemy import select, func
 from fastapi import  HTTPException
 
 
-async def create_user(db: AsyncSession, user_data: UserCreate) -> User:
-    try:
-        # Check if user already exists (optional)
-        stmt = select(User).where(
-            (User.email == user_data.email) | 
-            (User.mobile_no == user_data.mobile_no)
-        )
-        result = await db.execute(stmt)
-        existing_user = result.scalar_one_or_none()
-        
-        if existing_user:
-            raise HTTPException(
-                status_code=400,
-                detail="User with this email or username already exists"
-            )
-        
-        # Hash password and create user
-        hashed_password = hash_password(user_data.password)
-        user_dict = user_data.model_dump()
-        user_dict['password'] = hashed_password
-        
-        new_user = User(**user_dict)
-        db.add(new_user)
-        await db.commit()
-        await db.refresh(new_user)
-        
-        return new_user
-        
-    except HTTPException:
-        await db.rollback()
-        raise
-    except Exception as e:
-        await db.rollback()
-        print(f"Error creating user: {e}")
+async def create_user(user_data: UserCreate, user_repo: UserRepository) -> User:
+    
+    # Check if user already exists (optional)
+    existing_user = await user_repo.get_by_email_or_mobile(
+        email=user_data.email, 
+        mobile_no=user_data.mobile_no
+    )
+    
+    if existing_user:
         raise HTTPException(
-            status_code=500,
-            detail="Could not create user"
+            status_code=400,
+            detail="User with this email or username already exists"
         )
-
-
+    
+    # Hash password and create user
+    hashed_password = hash_password(user_data.password)
+    
+    
+    return await user_repo.create_user(user_data=user_data,hashed_password=hashed_password)
+        
+    
 async def get_users(
     db: AsyncSession, 
     search: Optional[str] = None,
